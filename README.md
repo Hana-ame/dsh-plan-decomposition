@@ -107,13 +107,24 @@ has no other path onto Node 18.
 - `permissions: contents: read` — nothing here writes to the repository
 - steps, in order: `check` → `selftest` → `client-test` → `install.mjs --json`
 
-One known, non-blocking annotation, recorded here because it is otherwise
+One annotation that every run emits, recorded here because it is otherwise
 visible only in a CI log: `checkout@v4` and `setup-node@v4` — the only two
-actions this workflow uses — target Node 20, and GitHub reported forcing them
-onto Node 24. It affects no step's conclusion. The obvious fix is the `v5`
-actions, which is deliberately **not** in this commit: whether `v5` actually
-drops the runtime, and what else changes with it (notably setup-node's cache
-key), has not been verified here. Check the changelogs before bumping.
+actions this workflow uses — target Node 20, and GitHub forces them onto
+Node 24. It affects no step's conclusion, so all three legs stay green while
+it is present.
+
+It is not cosmetic. Node 20 was scheduled for removal from GitHub Actions on
+**2026-09-23** ([changelog](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners));
+runners have defaulted to Node 24 since 2026-06-16, and the escape hatch
+(`ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION`) only works until that removal. So
+this workflow is running on a runtime that is already past its deadline — the
+green runs are the last state in which nothing has failed yet.
+
+The fix is to move both actions to `v5`. That is **not** done here: it changes
+`setup-node`'s cache key along with the runtime, and it deserves a commit that
+is about that rather than one about documentation. `check.yml` itself does not
+change — the `node: [18, 20, 22]` matrix is unaffected, because the matrix
+selects what the *steps* run on, not what the *actions* run on.
 
 That last step prints the payload and a fingerprint of each half. It writes
 nothing, and it is there so the CI log itself carries the shas a definition
