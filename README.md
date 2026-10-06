@@ -107,12 +107,13 @@ has no other path onto Node 18.
 - `permissions: contents: read` — nothing here writes to the repository
 - steps, in order: `check` → `selftest` → `client-test` → `install.mjs --json`
 
-One known, non-blocking annotation: `checkout@v4` and `setup-node@v4` target
-Node 20, which GitHub now forces onto Node 24. It does not affect any step's
-conclusion. `checkout@v5` / `setup-node@v5` are the versions that drop the
-runtime, and they carry behaviour changes (notably setup-node's cache key), so
-the bump is deliberately a separate decision rather than a drive-by in a commit
-about something else.
+One known, non-blocking annotation, recorded here because it is otherwise
+visible only in a CI log: `checkout@v4` and `setup-node@v4` — the only two
+actions this workflow uses — target Node 20, and GitHub reported forcing them
+onto Node 24. It affects no step's conclusion. The obvious fix is the `v5`
+actions, which is deliberately **not** in this commit: whether `v5` actually
+drops the runtime, and what else changes with it (notably setup-node's cache
+key), has not been verified here. Check the changelogs before bumping.
 
 That last step prints the payload and a fingerprint of each half. It writes
 nothing, and it is there so the CI log itself carries the shas a definition
