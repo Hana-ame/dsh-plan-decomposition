@@ -16,9 +16,12 @@ the panel always shows what a human still owes a decision.
 ```
 src/host.js          code.host   — graph algebra, validation, review log
 src/client.js        code.client — the panel (React, drawn by the DSH shell)
-scripts/check.mjs    pre-flight gate: hygiene + RPC surface agreement
-scripts/selftest.mjs behavioural test: what the handlers actually compute
-scripts/install.mjs  emits the cordis_define payload; writes nothing
+scripts/check.mjs      pre-flight gate: hygiene + RPC surface agreement
+scripts/selftest.mjs   behavioural test: what the handlers actually compute
+scripts/client-test.mjs behavioural test, client half: renders the panel against a
+                       stub ctx and asserts the element tree; also feeds packPlan
+                       output into the real host readPlan. No DSH process involved.
+scripts/install.mjs    emits the cordis_define payload; writes nothing
 ```
 
 `src/host.js` and `src/client.js` are **plain JavaScript function bodies**. They
@@ -54,12 +57,29 @@ package in the same process.
 ## Gates
 
 ```sh
-npm test          # check:client + check:host + check + selftest
-npm run check     # hygiene + RPC agreement
-npm run selftest  # behavioural
-npm run install   # print the install prompt (writes nothing)
-npm run emit      # JSON payload
+npm test                # check:client + check:host + check + selftest + client-test
+npm run check           # hygiene + RPC agreement
+npm run selftest        # behavioural (host half)
+npm run check:clienttest # behavioural (client half, no DSH needed)
+npm run install         # print the install prompt (writes nothing)
+npm run emit            # JSON payload
 ```
+
+`npm test` covers everything CI runs, plus two parse-only checks CI skips
+(`check:client` / `check:host` are subsumed by `check.mjs`, which parses both
+halves as function bodies anyway). The one thing `npm test` does **not** do is
+the last CI step, `install.mjs --json`; run `npm run emit` for that. So:
+
+| | check | selftest | client-test | emit |
+|---|---|---|---|---|
+| CI (`cordis-preflight`) | ✅ | ✅ | ✅ | ✅ |
+| `npm test` / `npm run gate` | ✅ | ✅ | ✅ | ❌ use `npm run emit` |
+
+There are three behavioural suites, not one: `selftest.mjs` covers the host
+handlers against fixtures, and `client-test.mjs` covers the client half — which
+is the half a person actually looks at, and which no suite covered before it
+existed. The `packPlan` → `readPlan` seam between the two halves is checked by
+neither suite alone; only `client-test.mjs` feeds one into the other.
 
 `check.mjs` fails on banned constructs, on a half that does not parse as a
 function body, on a client RPC with no host handler, and on a build stamp that
@@ -71,6 +91,24 @@ alive inside a running DSH process; the script's whole job is to gate, then
 print the exact `cordis_define` argument together with a sha256 fingerprint of
 each half so a definition made in the process can be matched against these
 files afterwards.
+
+## CI
+
+`.github/workflows/check.yml` (`cordis-preflight`) runs on pushes to **both**
+`main` and `master`, on every pull request, and on `workflow_dispatch`. It is
+the only thing that has ever run these suites on anything but this machine, so
+until it has run, "the gate is green" means "green on the author's Node 22".
+
+- matrix `node: [18, 20, 22]`, `fail-fast: false` — one runtime failing is
+  visible on its own row instead of hiding behind a cancelled sibling
+- `timeout-minutes: 5` — the suites are zero-dependency and finish in seconds;
+  a job still running after five minutes is hung, not slow
+- `permissions: contents: read` — nothing here writes to the repository
+- steps, in order: `check` → `selftest` → `client-test` → `install.mjs --json`
+
+That last step prints the payload and a fingerprint of each half. It writes
+nothing, and it is there so the CI log itself carries the shas a definition
+made inside a running DSH can be checked against.
 
 ## Installing
 
