@@ -1,0 +1,40 @@
+{
+  "name": "dsh-plan-decomposition",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Human-supervised task decomposition panel for the DeepSeek Harness Web GUI, shipped as a dynamic Cordis plugin.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "check": "node scripts/check.mjs",
+    "check:json": "node scripts/check.mjs --json",
+    "selftest": "node scripts/selftest.mjs",
+    "selftest:json": "node scripts/selftest.mjs --json",
+    "gate": "npm run check && npm run selftest",
+    "test": "npm run check:client && npm run check:host && npm run gate",
+    "check:client": "node -e \"new Function(require('fs').readFileSync('src/client.js','utf8'))\"",
+    "check:host": "node -e \"new Function(require('fs').readFileSync('src/host.js','utf8'))\"",
+    "install": "node scripts/install.mjs",
+    "install:prompt": "node scripts/install.mjs --prompt",
+    "emit": "node scripts/install.mjs --json"
+  },
+  "files": [
+    "src",
+    "scripts",
+    "README.md"
+  ],
+  "keywords": [
+    "deepseek",
+    "harness",
+    "dsh",
+    "cordis",
+    "plugin",
+    "plan",
+    "decomposition",
+    "checkpoints",
+    "critical-path"
+  ]
+}

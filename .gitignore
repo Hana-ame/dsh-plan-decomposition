@@ -1,0 +1,5 @@
+node_modules/
+*.log
+
+# CI artifact written by scripts/install.mjs --json
+install.json

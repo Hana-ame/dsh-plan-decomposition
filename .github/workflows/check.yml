@@ -1,0 +1,42 @@
+name: cordis-preflight
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cordis-preflight:
+    name: cordis preflight (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20, 22]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # Hygiene: parses as a function body, no banned constructs, no bare
+      # timers, client RPCs matched against host handlers, build stamp agreement.
+      - name: check
+        run: node scripts/check.mjs
+
+      # Behaviour: the handlers are called directly and their output asserted.
+      - name: selftest
+        run: node scripts/selftest.mjs
+
+      # Emits the cordis_define payload. This writes nothing; it only proves the
+      # gate passes and prints a fingerprint of each half.
+      - name: emit
+        run: node scripts/install.mjs --json > install.json
+
+      - name: show emit
+        run: cat install.json
