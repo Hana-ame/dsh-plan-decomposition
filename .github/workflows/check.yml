@@ -41,6 +41,14 @@ jobs:
       - name: selftest
         run: node scripts/selftest.mjs
 
+      # Behaviour, client half: the panel is rendered against a stub ctx and the
+      # resulting element tree asserted — the graph a person actually reads, the
+      # pack/normalise seam with the host, and the injected stylesheet. No DSH
+      # process is involved, so this runs anywhere CI does; the point is that
+      # "the client draws what the host reported" is now answerable by a gate.
+      - name: client-test
+        run: node scripts/client-test.mjs
+
       # Emits the cordis_define payload. This writes nothing; it only proves the
       # gate passes and prints a fingerprint of each half.
       - name: emit

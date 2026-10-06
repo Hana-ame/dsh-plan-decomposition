@@ -29,6 +29,7 @@
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -498,6 +499,34 @@ function run() {
     const tol = analyseServiceTolerance(sources.host, blanked.host)
     record('host', 'tolerates absent services', tol.ok, tol.detail)
     record('host', 'no filesystem access', !/ctx\.get\(\s*'fs'\s*\)/.test(sources.host), 'the plan algebra needs no fs service')
+  }
+
+  // -- the client behavioural suite exists and runs ----------------------------
+  //
+  // THIS ASKS THE SUITE TO RUN, NOT ITS SOURCE TO LOOK RIGHT.
+  //
+  // check.mjs answers "would cordis_define accept this, and do the two halves
+  // agree on their RPC surface?" selftest.mjs answers "does the host compute
+  // what it claims?". Neither answered anything about what the client *draws* —
+  // mutation testing showed a client whose `createElement` returned null left
+  // every gate in this file green. scripts/client-test.mjs closes that, and a
+  // suite nobody runs closes nothing, so it is executed here rather than
+  // grepped: a green presence check next to a red suite is the worst outcome,
+  // and running it is what makes the CI step and this gate agree.
+  {
+    const suite = path.join(ROOT, 'scripts', 'client-test.mjs')
+    if (!fs.existsSync(suite)) {
+      record('suite', 'client behavioural suite is present', false, suite)
+    } else {
+      const run = (() => {
+        try {
+          const out = spawnSync(process.execPath, [suite], { encoding: 'utf8', timeout: 120000 })
+          return { code: out.status, tail: String(out.stdout || '').trim().split('\n').pop() }
+        } catch (e) { return { code: -1, tail: String((e && e.message) || e) } }
+      })()
+      record('suite', 'client behavioural suite is present', true, suite)
+      record('suite', 'client behavioural suite passes', run.code === 0, run.code === 0 ? run.tail : 'exit ' + String(run.code) + ' — ' + run.tail)
+    }
   }
 
   const errors = results.filter((r) => !r.pass && !r.name.startsWith('every host handler') && !r.name.startsWith('platform access'))
