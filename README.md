@@ -107,24 +107,28 @@ has no other path onto Node 18.
 - `permissions: contents: read` — nothing here writes to the repository
 - steps, in order: `check` → `selftest` → `client-test` → `install.mjs --json`
 
-One annotation that every run emits, recorded here because it is otherwise
+One annotation every run used to emit, recorded here because it was otherwise
 visible only in a CI log: `checkout@v4` and `setup-node@v4` — the only two
-actions this workflow uses — target Node 20, and GitHub forces them onto
-Node 24. It affects no step's conclusion, so all three legs stay green while
-it is present.
+actions this workflow uses — targeted Node 20, and GitHub forced them onto
+Node 24. It never affected a step's conclusion, so all three legs stayed
+green while it was there.
 
-It is not cosmetic. Node 20 was scheduled for removal from GitHub Actions on
-**2026-09-23** ([changelog](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners));
-runners have defaulted to Node 24 since 2026-06-16, and the escape hatch
-(`ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION`) only works until that removal. So
-this workflow is running on a runtime that is already past its deadline — the
-green runs are the last state in which nothing has failed yet.
+It was not cosmetic. Node 20 was removed from GitHub Actions on **2026-09-23**
+([changelog](https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners));
+runners had defaulted to Node 24 since 2026-06-16, and the escape hatch
+(`ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION`) only worked until that removal. So
+the green runs were the last state in which nothing had failed yet.
 
-The fix is to move both actions to `v5`. That is **not** done here: it changes
-`setup-node`'s cache key along with the runtime, and it deserves a commit that
-is about that rather than one about documentation. `check.yml` itself does not
-change — the `node: [18, 20, 22]` matrix is unaffected, because the matrix
-selects what the *steps* run on, not what the *actions* run on.
+Both actions are now on `v5` and the annotation is gone — runs `37403053263`
+(before) and `37405137124` (after) are both three-leg green, and differ only
+in that one entry. `check.yml`'s `node: [18, 20, 22]` matrix was never
+affected: the matrix selects what the *steps* run on, not what the *actions*
+run on.
+
+The one annotation still present, on all three legs, is informational and has
+a date rather than a past deadline: `ubuntu-latest` migrates to Ubuntu 26
+beginning **2026-10-19**. That one is a future notice, so it is noted rather
+than acted on.
 
 That last step prints the payload and a fingerprint of each half. It writes
 nothing, and it is there so the CI log itself carries the shas a definition
