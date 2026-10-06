@@ -96,8 +96,9 @@ files afterwards.
 
 `.github/workflows/check.yml` (`cordis-preflight`) runs on pushes to **both**
 `main` and `master`, on every pull request, and on `workflow_dispatch`. It is
-the only thing that has ever run these suites on anything but this machine, so
-until it has run, "the gate is green" means "green on the author's Node 22".
+the only thing that runs these suites outside this machine, so it is also the
+only thing that can catch a runtime difference — `client-test.mjs` in particular
+has no other path onto Node 18.
 
 - matrix `node: [18, 20, 22]`, `fail-fast: false` — one runtime failing is
   visible on its own row instead of hiding behind a cancelled sibling
@@ -105,6 +106,13 @@ until it has run, "the gate is green" means "green on the author's Node 22".
   a job still running after five minutes is hung, not slow
 - `permissions: contents: read` — nothing here writes to the repository
 - steps, in order: `check` → `selftest` → `client-test` → `install.mjs --json`
+
+One known, non-blocking annotation: `checkout@v4` and `setup-node@v4` target
+Node 20, which GitHub now forces onto Node 24. It does not affect any step's
+conclusion. `checkout@v5` / `setup-node@v5` are the versions that drop the
+runtime, and they carry behaviour changes (notably setup-node's cache key), so
+the bump is deliberately a separate decision rather than a drive-by in a commit
+about something else.
 
 That last step prints the payload and a fingerprint of each half. It writes
 nothing, and it is there so the CI log itself carries the shas a definition
