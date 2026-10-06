@@ -57,25 +57,32 @@ package in the same process.
 ## Gates
 
 ```sh
-npm test                # check:client + check:host + check + selftest + client-test
+npm test                # check:client + check:host + check + selftest + client-test + emit
 npm run check           # hygiene + RPC agreement
 npm run selftest        # behavioural (host half)
 npm run check:clienttest # behavioural (client half, no DSH needed)
 npm run install         # print the install prompt (writes nothing)
-npm run emit            # JSON payload
+npm run emit            # JSON payload (writes install.json)
+npm run emit:check      # same, stdout discarded — the form npm test uses
 ```
 
 `npm test` covers everything CI runs, plus two parse-only checks CI skips
 (`check:client` / `check:host` are subsumed by `check.mjs`, which parses both
-halves as function bodies anyway). The one thing `npm test` does **not** do is
-the last CI step, `install.mjs --json`; run `npm run emit` for that. So:
+halves as function bodies anyway). It uses `emit:check` rather than `emit`, so
+`npm test` leaves nothing behind in the repository root — `emit` writes
+`install.json` there, and an untracked artifact is what makes a clean checkout
+and a used one disagree.
 
 | | check | selftest | client-test | emit |
 |---|---|---|---|---|
 | CI (`cordis-preflight`) | ✅ | ✅ | ✅ | ✅ |
-| `npm test` / `npm run gate` | ✅ | ✅ | ✅ | ❌ use `npm run emit` |
+| `npm test` / `npm run gate` | ✅ | ✅ | ✅ | ✅ |
 
-There are three behavioural suites, not one: `selftest.mjs` covers the host
+`emit` used to be the one gap in that row. It stayed a gap for the same reason
+`client-test` was one: `install.mjs` is the step two false-red checks used to
+block outright, so it was the step nobody ran casually.
+
+There are two behavioural suites, not one: `selftest.mjs` covers the host
 handlers against fixtures, and `client-test.mjs` covers the client half — which
 is the half a person actually looks at, and which no suite covered before it
 existed. The `packPlan` → `readPlan` seam between the two halves is checked by
