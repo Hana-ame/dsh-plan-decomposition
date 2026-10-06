@@ -2,7 +2,11 @@ name: cordis-preflight
 
 on:
   push:
-    branches: [main]
+    # Both spellings, deliberately: the local branch is `master` but a new remote
+    # usually defaults to `main`. Pinning one name means the other silently never
+    # runs this workflow — and a workflow that never fires looks exactly like a
+    # workflow that always passes.
+    branches: [main, master]
   pull_request:
   workflow_dispatch:
 
@@ -13,6 +17,10 @@ jobs:
   cordis-preflight:
     name: cordis preflight (node ${{ matrix.node }})
     runs-on: ubuntu-latest
+    # The suites are zero-dependency and finish in seconds. A job still running
+    # after a few minutes is hung, not slow — fail fast instead of burning the
+    # 6h default on a script that has nothing left to wait for.
+    timeout-minutes: 5
     strategy:
       fail-fast: false
       matrix:
