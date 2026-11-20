@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Human-supervised task decomposition panel for the DeepSeek Harness Web GUI, shipped as a dynamic Cordis plugin.",
+  "author": "nanaka",
   "license": "MIT",
   "engines": {
     "node": ">=18"
